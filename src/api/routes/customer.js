@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const {axiosGraphQL, shopifyClient} = require("../../config")
+const _ = require("lodash");
 
 router.post("/customerAccessTokenCreate", async (req, res, next) => {
   const {input} = req.body;
   const graphqlQuery = {
     query: customer.customerAccessTokenCreate,
-    variables: {input},
+    variables: {input}
   };
 
   const result = await axiosGraphQL({
@@ -14,7 +15,17 @@ router.post("/customerAccessTokenCreate", async (req, res, next) => {
   })
     .then((response) => response.data)
     .then(async (result) => {
-      const {customerAccessToken, customerUserErrors} =
+
+      if(_.isEmpty(result.data.customerAccessTokenCreate?.customerAccessToken)){
+        const {customerUserErrors} = result.data.customerAccessTokenCreate
+        const errors = {
+          code: customerUserErrors[0]?.code,
+          message: customerUserErrors[0]?.message,
+        }
+        return {errors, status: 'FAIL'};
+      }
+
+      const {customerAccessToken} =
         result.data?.customerAccessTokenCreate;
 
       const customerQuery = await shopifyClient.query({
@@ -29,11 +40,12 @@ router.post("/customerAccessTokenCreate", async (req, res, next) => {
           }
         }`,
       });
+    
 
       if(customerQuery?.body.data.customer){
         return {customerAccessToken, customer: customerQuery?.body.data.customer, status: 'OK'};
       } else {
-        return {customerUserErrors, status: 'FAIL'};
+        return {status: 'FAIL'};
       }
     })
     .catch((error) => error);

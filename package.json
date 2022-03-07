@@ -10,7 +10,6 @@
     "nodemon": "^2.0.15"
   },
   "scripts": {
-    "build": "yarn build",
     "start": "nodemon ./src/server.js"
   }
 }

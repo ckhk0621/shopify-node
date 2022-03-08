@@ -1,4 +1,7 @@
 {
+  "name": "shopify-node",
+  "version": "1.0.0",
+  "description": "Node server",
   "dependencies": {
     "@shopify/shopify-api": "^2.1.0",
     "axios": "^0.26.0",

@@ -13,6 +13,6 @@
     "nodemon": "^2.0.15"
   },
   "scripts": {
-    "start": "nodemon ./src/server.js"
+    "start": "nodemon ./index.js"
   }
 }

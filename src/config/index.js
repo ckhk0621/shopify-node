@@ -18,4 +18,10 @@ const shopifyClient = new Shopify.Clients.Storefront(
   process.env.STORE_FRONT_ACCESS_TOKEN
 );
 
-module.exports = {shopifyClient, axiosGraphQL};
+const shopifyGraphql = new Shopify.Clients.Graphql(
+  process.env.STORE_NAME,
+  process.env.ADMIN_API_ACCESS_TOKEN
+);
+
+
+module.exports = {shopifyClient, shopifyGraphql, axiosGraphQL};

@@ -3,6 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require("cors");
 const customerRoute = require('./api/routes/customer');
+const customersRoute = require('./api/routes/customers');
+const ordersRoute = require('./api/routes/orders');
 
 const app = express()
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -23,5 +25,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/customer', customerRoute);
+app.use('/customers', customersRoute);
+app.use('/orders', ordersRoute);
 ///
 module.exports = app;

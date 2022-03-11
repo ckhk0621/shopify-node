@@ -7,7 +7,7 @@ router.get("/get", async (req, res, next) => {
 
   const result = await shopifyGraphql.query({
     data: `{
-      customers(first: 10) {
+      customers(first: 10, sortKey: ORDERS_COUNT, reverse: true) {
         edges {
           node {
             id
@@ -15,6 +15,12 @@ router.get("/get", async (req, res, next) => {
             totalSpentV2 {
               amount,
               currencyCode
+            }
+            downLine: metafield(namespace: "affiliate", key: "downline") {
+              value
+            }
+            upLine: metafield(namespace: "affiliate", key: "upline") {
+              value
             }
           }
         }
@@ -24,21 +30,5 @@ router.get("/get", async (req, res, next) => {
 
   res.send(result);
 });
-
-// const customer = {
-//   customerAccessTokenCreate: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
-//     customerAccessTokenCreate(input: $input) {
-//       customerAccessToken {
-//         accessToken
-//         expiresAt
-//       }
-//       customerUserErrors {
-//         code
-//         field
-//         message
-//       }
-//     }
-//   }`,
-// };
 
 module.exports = router;

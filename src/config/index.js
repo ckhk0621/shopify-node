@@ -13,11 +13,13 @@ const axiosGraphQL = axios.create({
   method: "post",
 });
 
+// STOREFRONT API
 const shopifyClient = new Shopify.Clients.Storefront(
   process.env.STORE_NAME,
   process.env.STORE_FRONT_ACCESS_TOKEN
 );
 
+// ADMIN API
 const shopifyGraphql = new Shopify.Clients.Graphql(
   process.env.STORE_NAME,
   process.env.ADMIN_API_ACCESS_TOKEN

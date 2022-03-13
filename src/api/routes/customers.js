@@ -7,7 +7,7 @@ router.get("/get", async (req, res, next) => {
 
   const result = await shopifyGraphql.query({
     data: `{
-      customers(first: 10, sortKey: ORDERS_COUNT, reverse: true) {
+      customers(first: 10) {
         edges {
           node {
             id
@@ -17,9 +17,15 @@ router.get("/get", async (req, res, next) => {
               currencyCode
             }
             downLine: metafield(namespace: "affiliate", key: "downline") {
+              id
               value
             }
             upLine: metafield(namespace: "affiliate", key: "upline") {
+              id
+              value
+            }
+            referral_code: metafield(namespace: "affiliate", key: "referral_code") {
+              id
               value
             }
           }

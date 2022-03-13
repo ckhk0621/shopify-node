@@ -3,61 +3,106 @@ const router = express.Router();
 const { axiosGraphQL, shopifyClient, shopifyGraphql } = require("../../config");
 const _ = require("lodash");
 
-router.get("/get", async (req, res, next) => {
+const handleMapReferrer = async (referrer, downLine) => {
+  const downLineID = /[^/]*$/.exec(`${downLine}`)[0];
+}
 
+router.post("/customerCreate", async (req, res, next) => {
+  const { input, referralCode } = req.body;
+
+  const graphqlQuery = {
+    query: `mutation customerCreate($input: CustomerCreateInput!) {
+      customerCreate(input: $input) {
+        customer {
+          id
+          firstName
+          lastName,
+          email,
+          phone,
+          acceptsMarketing
+        }
+        customerUserErrors { field, message, code }
+      }
+    }`,
+    variables: { input },
+  };
+
+  const result = await shopifyClient
+    .query({
+      data: graphqlQuery,
+    })
+    .then((response) => response.body.data)
+    .then((data) => {
+      if (data.customerCreate.id) {
+        return data.customerCreate;
+      }
+    });
+
+  res.send(result);
+});
+
+router.put("/updateReferralCode", async (req, res, next) => {
   const { input } = req.body;
-
-  const id = JSON.stringify(`gid://shopify/Customer/${input.id}`)
+  const graphqlQuery = {
+    query: `mutation customerUpdate($input: CustomerInput!) {
+      customerUpdate(input: $input) {
+        customer {
+          id
+        }
+        userErrors { 
+          field 
+          message 
+        }
+      }
+    }`,
+    variables: { input },
+  };
 
   const result = await shopifyGraphql.query({
-    data: `{ customer(id: ${id}) {
-      id
-      firstName
-      lastName
-      acceptsMarketing
-      email
-      phone
-      ordersCount
-      totalSpentV2 {
-        amount,
-        currencyCode
-      }
-      averageOrderAmountV2 {
-        amount,
-        currencyCode
-      }
-      createdAt
-      updatedAt
-      note
-      verifiedEmail
-      validEmailAddress
-      tags
-      lifetimeDuration
-      defaultAddress {
-        formattedArea
-        address1
-      }
-      addresses {
-        address1
-      }
-      image { src }
-      downLine: metafield(namespace: "affiliate", key: "downline") {
-        value
-      }
-      upLine: metafield(namespace: "affiliate", key: "upline") {
-        value
-      }
-    }
-  }`,
+    data: graphqlQuery,
   });
+  res.send(result);
+});
 
+router.put("/updateDownLine", async (req, res, next) => {
+  const { input } = req.body;
+  const graphqlQuery = {
+    query: `mutation customerUpdate($input: CustomerInput!) {
+      customerUpdate(input: $input) {
+        customer {
+          id
+        }
+        userErrors { 
+          field 
+          message 
+        }
+      }
+    }`,
+    variables: { input },
+  };
+
+  const result = await shopifyGraphql.query({
+    data: graphqlQuery,
+  });
   res.send(result);
 });
 
 router.post("/customerAccessTokenCreate", async (req, res, next) => {
   const { input } = req.body;
   const graphqlQuery = {
-    query: customer.customerAccessTokenCreate,
+    query: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+      customerAccessTokenCreate(input: $input) {
+        customerAccessToken {
+          accessToken
+          expiresAt
+        }
+        customerUserErrors {
+          code
+          field
+          message
+        }
+      }
+    }`,
     variables: { input },
   };
 
@@ -109,20 +154,60 @@ router.post("/customerAccessTokenCreate", async (req, res, next) => {
   res.send(result);
 });
 
-const customer = {
-  customerAccessTokenCreate: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
-    customerAccessTokenCreate(input: $input) {
-      customerAccessToken {
-        accessToken
-        expiresAt
+router.get("/get", async (req, res, next) => {
+  const { input } = req.body;
+
+  const id = JSON.stringify(`gid://shopify/Customer/${input.id}`);
+
+  const result = await shopifyGraphql.query({
+    data: `{ customer(id: ${id}) {
+      id
+      firstName
+      lastName
+      acceptsMarketing
+      email
+      phone
+      ordersCount
+      totalSpentV2 {
+        amount,
+        currencyCode
       }
-      customerUserErrors {
-        code
-        field
-        message
+      averageOrderAmountV2 {
+        amount,
+        currencyCode
+      }
+      createdAt
+      updatedAt
+      note
+      verifiedEmail
+      validEmailAddress
+      tags
+      lifetimeDuration
+      defaultAddress {
+        formattedArea
+        address1
+      }
+      addresses {
+        address1
+      }
+      image { src }
+      downLine: metafield(namespace: "affiliate", key: "downline") {
+        value
+      }
+      upLine: metafield(namespace: "affiliate", key: "upline") {
+        value
+      }
+      referralCode: metafield(namespace: "affiliate", key: "referral_code") {
+        value
+      }
+      type: metafield(namespace: "customer", key: "type") {
+        value
       }
     }
   }`,
-};
+  });
+
+  res.send(result);
+});
 
 module.exports = router;

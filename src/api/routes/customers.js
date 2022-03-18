@@ -7,15 +7,11 @@ router.get("/get", async (req, res, next) => {
 
   const result = await shopifyGraphql.query({
     data: `{
-      customers(first: 10) {
+      customers(first: 30) {
         edges {
           node {
             id
             email
-            totalSpentV2 {
-              amount,
-              currencyCode
-            }
             downLine: metafield(namespace: "affiliate", key: "downline") {
               id
               value
@@ -28,11 +24,15 @@ router.get("/get", async (req, res, next) => {
               id
               value
             }
+            type: metafield(namespace: "customer", key: "type") {
+              id
+              value
+            }
           }
         }
       }
     }`,
-  }).then((res) => res.body.data).then(res => res.customers);
+  }).then((res) => res.body.data).then(res => res.customers).catch((err) => console.error(err));
 
   res.send(result);
 });

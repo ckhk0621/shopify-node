@@ -33,7 +33,7 @@ router.get("/gets", async (req, res, next) => {
             id
             name
             namespace
-            key
+            ownerType
           }
         }
       }

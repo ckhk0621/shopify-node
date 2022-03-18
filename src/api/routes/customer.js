@@ -3,12 +3,12 @@ const router = express.Router();
 const { axiosGraphQL, shopifyClient, shopifyGraphql } = require("../../config");
 const _ = require("lodash");
 
-const handleMapReferrer = async (referrer, downLine) => {
-  const downLineID = /[^/]*$/.exec(`${downLine}`)[0];
-}
+const handleMapReferrer = async (referrer, id) => {
+  const ID = /[^/]*$/.exec(`${id}`)[0];
+};
 
-router.post("/customerCreate", async (req, res, next) => {
-  const { input, referralCode } = req.body;
+router.post("/affiliateCreate", async (req, res, next) => {
+  const { input } = req.body;
 
   const graphqlQuery = {
     query: `mutation customerCreate($input: CustomerCreateInput!) {
@@ -31,17 +31,155 @@ router.post("/customerCreate", async (req, res, next) => {
     .query({
       data: graphqlQuery,
     })
-    .then((response) => response.body.data)
-    .then((data) => {
-      if (data.customerCreate.id) {
+    .then((response) => {
+      return response.body.data;
+    })
+    .then(async (data) => {
+      if (data.customerCreate.customer?.id) {
+        const customerUpdateQuery = {
+          query: `mutation customerUpdate($input: CustomerInput!) {
+            customerUpdate(input: $input) {
+              customer {
+                id
+              }
+              userErrors { 
+                field 
+                message 
+              }
+            }
+          }`,
+          variables: {
+            input: {
+              id: data.customerCreate.customer?.id,
+              metafields: [
+                {
+                  namespace: "customer",
+                  key: "type",
+                  value: "affiliate",
+                  type: "single_line_text_field",
+                },
+                {
+                  namespace: "affiliate",
+                  key: "referral_code",
+                  value: /[^/]*$/.exec(
+                    `${data.customerCreate.customer?.id}`
+                  )[0],
+                  type: "single_line_text_field",
+                },
+              ],
+            },
+          },
+        };
+
+        await shopifyGraphql.query({
+          data: customerUpdateQuery,
+        });
+
         return data.customerCreate;
       }
+
+      return data;
     });
 
   res.send(result);
 });
 
-router.put("/updateReferralCode", async (req, res, next) => {
+router.post("/customerCreate", async (req, res, next) => {
+  const { input, referralCode } = req.body;
+
+  console.log("referralCode-", referralCode);
+
+  const graphqlQuery = {
+    query: `mutation customerCreate($input: CustomerCreateInput!) {
+      customerCreate(input: $input) {
+        customer {
+          id
+          firstName
+          lastName,
+          email,
+          phone,
+          acceptsMarketing
+        }
+        customerUserErrors { field, message, code }
+      }
+    }`,
+    variables: { input },
+  };
+
+  const result = await shopifyClient
+    .query({
+      data: graphqlQuery,
+    })
+    .then((response) => {
+      return response.body.data;
+    })
+    .then(async (data) => {
+      if (data.customerCreate.customer?.id) {
+        // Update self user type
+        const customerUpdateQuery = {
+          query: `mutation customerUpdate($input: CustomerInput!) {
+            customerUpdate(input: $input) {
+              customer {
+                id
+              }
+              userErrors { 
+                field 
+                message 
+              }
+            }
+          }`,
+          variables: {
+            input: {
+              id: data.customerCreate.customer?.id,
+              metafields: [
+                {
+                  namespace: "customer",
+                  key: "type",
+                  value: "customer",
+                  type: "single_line_text_field",
+                },
+              ],
+            },
+          },
+        };
+
+        await shopifyGraphql.query({
+          data: customerUpdateQuery,
+        });
+
+        // Update map mapReferrer type
+        // ["6008047075489","6008047075489","6008047075489"]
+
+        if (referralCode) {
+          const id = JSON.stringify(`gid://shopify/Customer/${referralCode}`);
+
+          await shopifyGraphql
+            .query({
+              data: `{ customer(id: ${id}) {
+              id
+              downLine: metafield(namespace: "affiliate", key: "downline") {
+                value
+              }
+            }
+          }`,
+            })
+            .then((response) => {
+              if (response.data.customer) {
+                console.log("response.data.customer", response.data.customer);
+              }
+            });
+        }
+
+        return data.customerCreate;
+      }
+
+      return data;
+    });
+
+  res.send(result);
+});
+
+router.put("/updateMetafield", async (req, res, next) => {
   const { input } = req.body;
   const graphqlQuery = {
     query: `mutation customerUpdate($input: CustomerInput!) {
@@ -167,11 +305,6 @@ router.get("/get", async (req, res, next) => {
       acceptsMarketing
       email
       phone
-      ordersCount
-      totalSpentV2 {
-        amount,
-        currencyCode
-      }
       averageOrderAmountV2 {
         amount,
         currencyCode

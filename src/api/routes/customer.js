@@ -86,9 +86,6 @@ router.post("/affiliateCreate", async (req, res, next) => {
 
 router.post("/customerCreate", async (req, res, next) => {
   const { input, referralCode } = req.body;
-
-  console.log("referralCode-", referralCode);
-
   const graphqlQuery = {
     query: `mutation customerCreate($input: CustomerCreateInput!) {
       customerCreate(input: $input) {
@@ -150,22 +147,100 @@ router.post("/customerCreate", async (req, res, next) => {
         // Update map mapReferrer type
         // ["6008047075489","6008047075489","6008047075489"]
 
+        const downLineID = data.customerCreate.customer?.id; // downLine ID
+
         if (referralCode) {
-          const id = JSON.stringify(`gid://shopify/Customer/${referralCode}`);
+          const upLineID = JSON.stringify(
+            `gid://shopify/Customer/${referralCode.id}`
+          ); // upLine ID
 
           await shopifyGraphql
             .query({
-              data: `{ customer(id: ${id}) {
+              data: `{ customer(id: ${upLineID}) {
               id
               downLine: metafield(namespace: "affiliate", key: "downline") {
+                id
                 value
               }
             }
           }`,
             })
-            .then((response) => {
-              if (response.data.customer) {
-                console.log("response.data.customer", response.data.customer);
+            .then(async (response) => {
+              const addDownLineID = /[^/]*$/.exec(downLineID)[0]
+              if (response.body.data?.customer) {
+                const { downLine, id } = response.body.data?.customer;
+                if (downLine === null) {
+                  const upLineQuery = {
+                    query: `mutation customerUpdate($input: CustomerInput!) {
+                      customerUpdate(input: $input) {
+                        customer {
+                          id
+                        }
+                        userErrors { 
+                          field 
+                          message 
+                        }
+                      }
+                    }`,
+                    variables: {
+                      input: {
+                        id: id,
+                        metafields: [
+                          {
+                            namespace: "affiliate",
+                            key: "downline",
+                            value: JSON.stringify([addDownLineID]),
+                            type: "json",
+                          },
+                        ],
+                      },
+                    },
+                  };
+
+                  await shopifyGraphql
+                    .query({
+                      data: upLineQuery,
+                    })
+                } else {
+
+                  let updateCurrentDownLineIDs = JSON.parse(downLine.value)
+                  updateCurrentDownLineIDs = JSON.stringify([...updateCurrentDownLineIDs, addDownLineID])
+
+
+                  const upLineQuery = {
+                    query: `mutation customerUpdate($input: CustomerInput!) {
+                      customerUpdate(input: $input) {
+                        customer {
+                          id
+                        }
+                        userErrors { 
+                          field 
+                          message 
+                        }
+                      }
+                    }`,
+                    variables: {
+                      input: {
+                        id: id,
+                        metafields: [
+                          {
+                            namespace: "affiliate",
+                            key: "downline",
+                            value: updateCurrentDownLineIDs,
+                            id: downLine.id,
+                            type: "json",
+                          },
+                        ],
+                      },
+                    },
+                  };
+
+                  await shopifyGraphql
+                    .query({
+                      data: upLineQuery,
+                    })
+
+                }
               }
             });
         }

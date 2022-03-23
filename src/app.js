@@ -5,6 +5,7 @@ const cors = require("cors");
 const customerRoute = require('./api/routes/customer');
 const customersRoute = require('./api/routes/customers');
 const ordersRoute = require('./api/routes/orders');
+const checkoutRoute = require('./api/routes/checkout');
 const metafieldRoute = require('./api/routes/metafield');
 
 const app = express()
@@ -29,5 +30,6 @@ app.use('/customer', customerRoute);
 app.use('/customers', customersRoute);
 app.use('/orders', ordersRoute);
 app.use('/metafield', metafieldRoute);
+app.use('/checkout', checkoutRoute);
 ///
 module.exports = app;
